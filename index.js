@@ -20,6 +20,19 @@ class BooksList {
     document
       .getElementById('saveButton')
       .addEventListener('click', (e) => this.saveButton(e));
+    // init is invoked onload so it will render books from LS if there is one
+    this.loadDataFromLS();
+  }
+
+  loadDataFromLS() {
+    const data = storage.getItemsLS();
+    if (data == null || data == undefined) return;
+
+    this.books = data;
+
+    data.forEach((dataValue, i) => {
+      ui.addBookToTable(dataValue);
+    });
   }
 
   saveButton(e) {
@@ -44,6 +57,15 @@ class BooksList {
     this.saveData();
   }
 
+  removeBookByIdfromLS(bookId) {
+    this.books.forEach((el, i) => {
+      console.log(el);
+      if (el.id == bookId) this.books.splice(i, 1);
+    });
+
+    this.saveData();
+  }
+
   saveData() {
     storage.saveItemsLS(this.books);
   }
@@ -52,6 +74,13 @@ class BooksList {
 const booksList = new BooksList();
 
 class Ui {
+  deleteBook(e) {
+    const bookId = e.target.getAttribute('data-book-id');
+
+    e.target.parentElement.parentElement.remove();
+    booksList.removeBookByIdfromLS(bookId);
+  }
+
   addBookToTable(book) {
     const tbody = document.querySelector('#booksTable tbody');
     const tr = document.createElement('tr');
@@ -59,10 +88,24 @@ class Ui {
     tr.innerHTML = `
     <td>${book.title}</td>
     <td>${book.author}</td>
-    <td></td>
+    <td>
+      <button type="button" data-book-id="${book.id}" class="btn btn-danger btn-sm delete">Delete</button>
+    </td>
     `;
 
     tbody.appendChild(tr);
+
+    let deleteButton = document.querySelector(
+      `button.delete[data-book-id="${book.id}"]`
+    );
+    deleteButton.addEventListener('click', (e) => this.deleteBook(e));
+
+    this.clearInputs();
+  }
+
+  clearInputs() {
+    document.getElementById('bookTitle').value = '';
+    document.getElementById('bookAuthor').value = '';
   }
 }
 
