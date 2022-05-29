@@ -36,16 +36,17 @@ class BooksList {
   }
 
   saveButton(e) {
-    console.log('saved');
-    e.preventDefault();
+    console.log('Book has been saved.');
 
     const author = document.getElementById('bookAuthor').value;
     const title = document.getElementById('bookTitle').value;
 
     if (author === '' || title === '') {
-      alert('fill empty fields');
+      console.log('fill empty form fields');
       return;
     }
+
+    e.preventDefault();
 
     const book = new Book(title, author);
     this.addBook(book);
@@ -69,6 +70,48 @@ class BooksList {
   saveData() {
     storage.saveItemsLS(this.books);
   }
+
+  moveBookUp(bookId) {
+    const booksArr = this.books;
+
+    for (let i = 0; i < booksArr.length; i++) {
+      const element = booksArr[i];
+
+      if (element.id == bookId) {
+        if (i >= 1) {
+          let temp = booksArr[i - 1];
+          booksArr[i - 1] = booksArr[i];
+          booksArr[i] = temp;
+          break;
+        }
+      }
+    }
+
+    this.saveData();
+    ui.deleteAllBookRows();
+    this.loadDataFromLS();
+  }
+
+  moveBookDown(bookId) {
+    const booksArr = this.books;
+
+    for (let i = 0; i < booksArr.length; i++) {
+      const element = booksArr[i];
+
+      if (element.id == bookId) {
+        if (i <= booksArr.length - 2) {
+          let temp = booksArr[i + 1];
+          booksArr[i + 1] = booksArr[i];
+          booksArr[i] = temp;
+          break;
+        }
+      }
+    }
+
+    this.saveData();
+    ui.deleteAllBookRows();
+    this.loadDataFromLS();
+  }
 }
 
 const booksList = new BooksList();
@@ -76,7 +119,6 @@ const booksList = new BooksList();
 class Ui {
   deleteBook(e) {
     const bookId = e.target.getAttribute('data-book-id');
-
     e.target.parentElement.parentElement.remove();
     booksList.removeBookByIdfromLS(bookId);
   }
@@ -90,6 +132,8 @@ class Ui {
     <td>${book.author}</td>
     <td>
       <button type="button" data-book-id="${book.id}" class="btn btn-danger btn-sm delete">Delete</button>
+      <button type="button" data-book-id="${book.id}" class="btn btn-secondary btn-sm up-arrow">▲</button>
+      <button type="button" data-book-id="${book.id}" class="btn btn-secondary btn-sm down-arrow">▼</button>
     </td>
     `;
 
@@ -100,12 +144,42 @@ class Ui {
     );
     deleteButton.addEventListener('click', (e) => this.deleteBook(e));
 
+    let upButton = document.querySelector(
+      `button.up-arrow[data-book-id="${book.id}"]`
+    );
+    upButton.addEventListener('click', (e) => this.arrowUp(e));
+
+    let downButton = document.querySelector(
+      `button.down-arrow[data-book-id="${book.id}"]`
+    );
+    downButton.addEventListener('click', (e) => this.arrowDown(e));
+
     this.clearInputs();
+  }
+
+  deleteAllBookRows() {
+    const tbodyRows = document.querySelectorAll('#booksTable tbody tr');
+
+    tbodyRows.forEach((el) => el.remove());
+  }
+
+  arrowUp(e) {
+    const bookId = e.target.getAttribute('data-book-id');
+    console.log('up', bookId);
+    booksList.moveBookUp(bookId);
+  }
+
+  arrowDown(e) {
+    const bookId = e.target.getAttribute('data-book-id');
+    console.log('down', bookId);
+    booksList.moveBookDown(bookId);
   }
 
   clearInputs() {
     document.getElementById('bookTitle').value = '';
     document.getElementById('bookAuthor').value = '';
+
+    document.getElementById('bookForm').classList.remove('was-validated');
   }
 }
 
@@ -130,3 +204,27 @@ class Storage {
 }
 
 const storage = new Storage();
+
+// Bootstraps forms validator
+(() => {
+  'use strict';
+
+  // Fetch all the forms we want to apply custom Bootstrap validation styles to
+  const forms = document.querySelectorAll('.needs-validation');
+
+  // Loop over them and prevent submission
+  Array.from(forms).forEach((form) => {
+    form.addEventListener(
+      'submit',
+      (event) => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        form.classList.add('was-validated');
+      },
+      false
+    );
+  });
+})();
